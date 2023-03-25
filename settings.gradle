@@ -8,9 +8,32 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+//      mavenLocal()
+
         google()
         mavenCentral()
+//      maven {url 'https://jitpack.io'}
     }
 }
 rootProject.name = "CSVDroid"
+
+/* Directory layout
+    * .../CSVDroid
+        * app (android app in this repository)
+        * TableView (git submodul from https://github.com/k3b/TableView/ branch [tableviewK3b](https://github.com/k3b/TableView/tree/tableviewK3b) )
+            * tableview androidlib (cloned and extended from  https://github.com/evrencoskun/TableView [pending pullrequest](https://github.com/evrencoskun/TableView/pull/406 ) )
+            * tableviewutil androidlib (new lib by k3b making use of tableview much easier)
+            * tableviewdemo (android demo app, renamed from './TableView/app not used by CSVDroid)
+ */
+
 include ':app'
+
+// receipe how to inclunde taken from https://stackoverflow.com/questions/37883086/git-submodules-in-existing-gradle-project
+include(':tableview')
+project(':tableview').projectDir=new File('./TableView/tableview')
+include(':tableviewutil')
+project(':tableviewutil').projectDir=new File('./TableView/tableviewutil')
+
+// the renamed original tableview demo app as a reference that everything still works as expected
+include(':tableviewdemo')
+project(':tableviewdemo').projectDir=new File('./TableView/app')

@@ -1,0 +1,4 @@
+[submodule "TableView"]
+	path = TableView
+	url = https://github.com/k3b/TableView
+	branch = tableviewK3b
