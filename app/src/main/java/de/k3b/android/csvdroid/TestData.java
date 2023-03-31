@@ -19,9 +19,9 @@ this program. If not, see <http://www.gnu.org/licenses/>
 
 package de.k3b.android.csvdroid;
 
-import androidx.annotation.NonNull;
-
 import com.evrencoskun.tableview.model.ColumnDefinition;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,7 @@ import de.k3b.android.csvdroid.model.CsvItem;
  */
 
 public class TestData {
-    public static List<CsvItem> createSampleData(@NonNull CsvItem header, int rowCount) {
+    @NotNull public static List<CsvItem> createSampleData(@NotNull CsvItem header, int rowCount) {
         List<CsvItem> sampleData = new ArrayList<>();
         for(int itemNumber = 0; itemNumber < rowCount; itemNumber++) {
             sampleData.add(createSampleItem(header, itemNumber));
@@ -43,7 +43,7 @@ public class TestData {
         return sampleData;
     }
 
-    public static CsvItem createSampleHeader(int columnCount) {
+    @NotNull public static CsvItem createSampleHeader(int columnCount) {
         String[] columns = new String[columnCount];
         for(int i = 0; i < columnCount; i++) {
             columns[i] = "Col " + i;
@@ -51,7 +51,7 @@ public class TestData {
         return new CsvItem(null, -1, columns, null);
     }
 
-    @NonNull private static CsvItem createSampleItem(@NonNull CsvItem header, int itemNumber) {
+    @NotNull private static CsvItem createSampleItem(@NotNull CsvItem header, int itemNumber) {
         int colCount = header.getColumnCount();
         String[] columns = new String[colCount];
         for(int i = 0; i < colCount; i++) {
@@ -61,7 +61,7 @@ public class TestData {
         return new CsvItem(header, itemNumber, columns, new String[]{"Comment for Item " + itemNumber});
     }
 
-    public static List<ColumnDefinition<CsvItem>> createColumnDefinitions(@NonNull CsvItem header) {
+    @NotNull public static List<ColumnDefinition<CsvItem>> createColumnDefinitions(@NotNull CsvItem header) {
         List<ColumnDefinition<CsvItem>> definitions = new ArrayList<>();
         int colCount = header.getColumnCount();
         for(int i = 0; i < colCount; i++) {

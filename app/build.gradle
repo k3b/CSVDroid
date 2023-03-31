@@ -10,6 +10,7 @@ android {
         applicationId "de.k3b.android.csvdroid"
         minSdk min_sdk_version
         targetSdk target_sdk_version
+        multiDexEnabled true
         versionCode 1
         versionName "1.0"
 
@@ -40,6 +41,14 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidx_test_espresso_version"
     // androidTestImplementation "androidx.test.espresso:espresso-contrib:$androidx_test_espresso_version"
 
+    // csv support
+    // https://opencsv.sourceforge.net/licenses.html License: Apache2
+    implementation 'com.opencsv:opencsv:5.7.1'
+
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    implementation 'commons-io:commons-io:2.11.0'
+
+    // submodule "TableView" (https://github.com/k3b/TableView branch = tableviewK3b) in ../TableView/tablevie...
     implementation project(':tableview')
     implementation project(':tableviewutil')
 }

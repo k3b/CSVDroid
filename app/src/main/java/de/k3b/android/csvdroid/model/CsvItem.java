@@ -18,8 +18,8 @@ this program. If not, see <http://www.gnu.org/licenses/>
  */
 package de.k3b.android.csvdroid.model;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import com.evrencoskun.tableview.model.IModelWithId;
 
@@ -31,13 +31,13 @@ import com.evrencoskun.tableview.model.IModelWithId;
  * Created by k3b on 2023-03-25
  */
 public class CsvItem  implements IModelWithId {
-    @NonNull private final String id;
+    @NotNull private final String id;
     @Nullable private final CsvItem header;
     final int linenumber;
-    @NonNull final String[] columns;
+    @NotNull final String[] columns;
     @Nullable final String[] comments;
 
-    public CsvItem(@Nullable CsvItem header, int linenumber, @NonNull String[] columns,@Nullable String[] comments) {
+    public CsvItem(@Nullable CsvItem header, int linenumber, @NotNull String[] columns,@Nullable String[] comments) {
         this.id = "" + linenumber;
         this.linenumber = linenumber;
         this.columns = columns;
@@ -45,13 +45,13 @@ public class CsvItem  implements IModelWithId {
         this.header = header;
     }
 
-    @NonNull
+    @NotNull
     @Override
     public String getId() {
         return id;
     }
 
-    @NonNull
+    @NotNull
     public String getColumn(int colNo, String notFoundValue) {
         // if there is no value return ""
         if (colNo < 0 || colNo >= columns.length
@@ -63,7 +63,7 @@ public class CsvItem  implements IModelWithId {
         return columns[colNo];
     }
 
-    @NonNull
+    @NotNull
     public String getComments() {
         if (this.comments == null || this.comments.length == 0) return "";
         return String.join("\n", comments);
