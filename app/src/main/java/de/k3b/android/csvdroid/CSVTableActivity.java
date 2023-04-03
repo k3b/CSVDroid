@@ -116,7 +116,7 @@ public class CSVTableActivity extends AppCompatActivity {
         mTableView.setAdapter(tableViewAdapter);
         tableViewAdapter.setAllItems(tableViewModel);
 
-        // mTableView.setTableViewListener(new TableViewListener(mTableView));
+        mTableView.setTableViewListener(new TableViewListener(mTableView));
 
     }
 

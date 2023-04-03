@@ -23,6 +23,8 @@ import org.jetbrains.annotations.NotNull;
 
 import com.evrencoskun.tableview.model.IModelWithId;
 
+import java.util.Arrays;
+
 /** A {@link CsvItem} represents one item (line) of a csv file.
  * * An item (line) consists of comments or empty lines above the columns
  * * The columns that contain the csv data
@@ -71,5 +73,14 @@ public class CsvItem  implements IModelWithId {
 
     public int getColumnCount() {
         return columns.length;
+    }
+
+    @Override @NotNull
+    public String toString() {
+        return "CsvItem{" +
+                "id='" + id + '\'' +
+                ", columns=" + Arrays.toString(columns) +
+                ", comments=" + Arrays.toString(comments) +
+                '}';
     }
 }
