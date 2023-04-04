@@ -18,41 +18,29 @@ this program. If not, see <http://www.gnu.org/licenses/>
  */
 package de.k3b.android.csvdroid;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import com.evrencoskun.tableview.TableView;
 import com.evrencoskun.tableview.model.ColumnDefinition;
 import com.evrencoskun.tableviewutil.TableViewAdapter;
 import com.evrencoskun.tableviewutil.TableViewModel;
-import com.opencsv.CSVReader;
-
-import org.apache.commons.io.IOUtils;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.List;
 
-import de.k3b.android.csvdroid.model.CsvItem;
-import de.k3b.util.IRepository;
-import de.k3b.util.csv.CsvUtil;
+import de.k3b.util.csv.CsvItem;
+import de.k3b.util.csv.CsvItemRepository;
 
 public class CSVTableActivity extends AppCompatActivity {
-    private static final String TAG = CSVTableActivity.class.getSimpleName();
-
     private final Handler delayTimerForSearch = new Handler();
+
+    private TableViewAdapter<CsvItem> tableViewAdapter;
+    private List<ColumnDefinition<CsvItem>> columnDefinitions;
+    private CsvItemRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,31 +50,20 @@ public class CSVTableActivity extends AppCompatActivity {
 
         TableView tableView = findViewById(R.id.tableview);
 
-        CsvItem header = null;
-        List<CsvItem> pojos = null;
+        repository = CsvItemRepositoryAndroid.create (this);
 
-        Uri sourceUri = getSourceUri(getIntent());
-        if (sourceUri != null) {
-            String csv = readAll(sourceUri);
 
-            if (csv != null) {
-                try (CSVReader csvReader = CsvUtil.openCsv(csv)) {
-                    header = CsvUtil.getNext(csvReader, null);
-                    pojos = CsvUtil.getAll(csvReader, header);
-                } catch (Exception exception) {
-                    showError(exception, "Cannot read from " + sourceUri);
-                }
-            }
-        }
-
-        if (header == null) {
+        if (repository == null) {
             // no source file on app start. Use constant demo data instead
-            header = TestData.createSampleHeader(8);
-            pojos = TestData.createSampleData(header, 25);
-            showError(null, "No Input CSV. Usining demo data instead.");
+            CsvItem header = TestData.createSampleHeader(8);
+            List<CsvItem> pojos = TestData.createSampleData(header, 25);
+
+            repository = new CsvItemRepository(header, pojos);
+            CsvItemRepositoryAndroid.showError(this,null, "No Input CSV. Usining demo data instead.");
         }
 
-        initializeTableView(tableView,header, pojos);
+
+        initializeTableView(tableView);
     }
 
     @Override
@@ -113,40 +90,13 @@ public class CSVTableActivity extends AppCompatActivity {
         return true;
     }
 
-    @Nullable private String readAll(@Nullable Uri inUri) {
-        if (inUri != null) {
-            try (InputStream is = getContentResolver().openInputStream(inUri)) {
-                return IOUtils.toString(is, Charset.defaultCharset());
-            } catch (IOException exception) {
-                showError(exception, "Cannot read from " + inUri);
-            }
-        }
-        return null;
-    }
-
-    private void showError(Exception exception, String text) {
-        Toast.makeText(this, text, Toast.LENGTH_LONG).show();
-        Log.e(TAG, text, exception);
-    }
-
-    protected Uri getSourceUri(Intent intent) {
-        if (intent == null) return null;
-
-        return intent.getData();
-    }
-
-    private TableViewAdapter<CsvItem> tableViewAdapter;
-    private List<ColumnDefinition<CsvItem>> columnDefinitions;
-    private IRepository<CsvItem> repository;
-
-    private void initializeTableView(TableView tableView, @NonNull CsvItem header,@NonNull List<CsvItem> pojos) {
-        columnDefinitions = TestData.createColumnDefinitions(header);
+    private void initializeTableView(TableView tableView) {
+        columnDefinitions = TestData.createColumnDefinitions(repository.getHeader());
 
         // Create TableView Adapter
         tableViewAdapter = new TableViewAdapter<>();
         tableView.setAdapter(tableViewAdapter);
 
-        repository =new CsvItemRepository(pojos);
         filterItems(null);
 
         tableView.setTableViewListener(new TableViewListener(tableView));

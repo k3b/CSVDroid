@@ -16,7 +16,7 @@ for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>
  */
-package de.k3b.android.csvdroid.model;
+package de.k3b.util.csv;
 
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;

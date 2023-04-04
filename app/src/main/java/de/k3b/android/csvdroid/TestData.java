@@ -26,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.k3b.android.csvdroid.model.CsvItem;
+import de.k3b.util.csv.CsvItem;
 
 /**
  * This is where all Testdata for the demo app comes from.

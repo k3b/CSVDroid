@@ -18,6 +18,8 @@ this program. If not, see <http://www.gnu.org/licenses/>
  */
 package de.k3b.util.csv;
 
+import org.jetbrains.annotations.NotNull;
+
 import de.k3b.util.StringUtils;
 
 /**
@@ -28,6 +30,8 @@ import de.k3b.util.StringUtils;
  */
 public class CsvConfig {
     public static final CsvConfig DEFAULT = new CsvConfig(',', '"');
+
+    private static CsvConfig lastUsedConfig = DEFAULT;
     public static final char[] CSV_DELIMITER_CANDIDATES = {DEFAULT.getFieldDelimiterChar(), ';', '\t', ':', '|'};
     public static final char[] CSV_QUOTE_CANDIDATES = {DEFAULT.getQuoteChar(), '\''};
     private final char m_fieldDelimiterChar;
@@ -42,12 +46,17 @@ public class CsvConfig {
         char csvFieldDelimiterChar = findChar(line, CSV_DELIMITER_CANDIDATES);
         char csvQuoteChar = findChar(line, CSV_QUOTE_CANDIDATES);
 
-        return new CsvConfig(csvFieldDelimiterChar, csvQuoteChar);
+        lastUsedConfig = new CsvConfig(csvFieldDelimiterChar, csvQuoteChar);
+        return lastUsedConfig;
     }
 
     private static char findChar(String line, char... candidates) {
         int pos = StringUtils.indexOfAny(line, 0, line.length(), candidates);
         return pos == -1 ? candidates[0] : line.charAt(pos);
+    }
+
+    @NotNull public static CsvConfig getLastUsedConfig() {
+        return lastUsedConfig;
     }
 
     public char getFieldDelimiterChar() {

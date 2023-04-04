@@ -33,8 +33,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.k3b.android.csvdroid.model.CsvItem;
-
 /**
  * Replacement for CSVReaderBuilder...build() that infers the csv parameters
  * <p>

@@ -16,27 +16,56 @@ for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>
  */
-package de.k3b.android.csvdroid;
+package de.k3b.util.csv;
+
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import de.k3b.android.csvdroid.model.CsvItem;
-import de.k3b.util.IRepository;
-
-public class CsvItemRepository implements IRepository<CsvItem> {
+/**
+ * load/parse csv content
+ *
+ * * hides implementationdetail com.opencsv.CSVReader
+ * * no android dependency
+ */
+public class CsvItemRepository {
+    @NotNull
+    private final CsvItem header;
     @NotNull private final List<CsvItem> pojos;
 
-    public CsvItemRepository(@NotNull List<CsvItem> pojos) {
+    @NotNull private final CsvConfig csvConfig;
+
+    public CsvItemRepository(@NotNull CsvItem header, @NotNull List<CsvItem> pojos) {
+        this.header = header;
         this.pojos = pojos;
+        this.csvConfig = CsvConfig.getLastUsedConfig();
     }
 
-    @NotNull public List<CsvItem> getPojos() {
-        return pojos;
+    @Nullable
+    public static CsvItemRepository create(String csv) throws CsvValidationException, IOException {
+        if (csv != null) {
+            try (CSVReader csvReader = CsvUtil.openCsv(csv)) {
+                if (csvReader != null) {
+                    CsvItem header = CsvUtil.getNext(csvReader, null);
+                    if (header != null) {
+                        List<CsvItem> pojos = CsvUtil.getAll(csvReader, header);
+                        return new CsvItemRepository(header, pojos);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @NotNull public CsvItem getHeader() {
+        return header;
     }
 
     @NotNull public List<CsvItem> getPojos(@Nullable String searchTerm) {
