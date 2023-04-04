@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import com.evrencoskun.tableview.model.IModelWithId;
 
 import java.util.Arrays;
+import java.util.Locale;
 
 /** A {@link CsvItem} represents one item (line) of a csv file.
  * * An item (line) consists of comments or empty lines above the columns
@@ -73,6 +74,20 @@ public class CsvItem  implements IModelWithId {
 
     public int getColumnCount() {
         return columns.length;
+    }
+
+    public boolean contains(@NotNull String searchTermLowerCase) {
+        return contains(searchTermLowerCase, columns) || contains(searchTermLowerCase, comments);
+    }
+
+    private boolean contains(@NotNull String searchTermLowerCase, @Nullable String[] columns) {
+        if (columns != null) {
+            for (String s : columns) {
+                if (s != null && s.toLowerCase(Locale.ROOT).contains(searchTermLowerCase))
+                    return true;
+            }
+        }
+        return false;
     }
 
     @Override @NotNull

@@ -21,11 +21,15 @@ package de.k3b.android.csvdroid;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.evrencoskun.tableview.TableView;
@@ -33,7 +37,6 @@ import com.evrencoskun.tableview.model.ColumnDefinition;
 import com.evrencoskun.tableviewutil.TableViewAdapter;
 import com.evrencoskun.tableviewutil.TableViewModel;
 import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvValidationException;
 
 import org.apache.commons.io.IOUtils;
 
@@ -43,18 +46,21 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 import de.k3b.android.csvdroid.model.CsvItem;
+import de.k3b.util.IRepository;
 import de.k3b.util.csv.CsvUtil;
 
 public class CSVTableActivity extends AppCompatActivity {
-
     private static final String TAG = CSVTableActivity.class.getSimpleName();
+
+    private final Handler delayTimerForSearch = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_csv_table);
 
-        TableView mTableView = findViewById(R.id.tableview);
+
+        TableView tableView = findViewById(R.id.tableview);
 
         CsvItem header = null;
         List<CsvItem> pojos = null;
@@ -80,9 +86,32 @@ public class CSVTableActivity extends AppCompatActivity {
             showError(null, "No Input CSV. Usining demo data instead.");
         }
 
-        initializeTableView(mTableView, header, pojos);
+        initializeTableView(tableView,header, pojos);
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_tableview, menu);
+
+        MenuItem i =  menu.findItem(R.id.search_bar);
+        SearchView searchView = (SearchView) i.getActionView();
+        searchView.setQueryHint(getString(R.string.search_hint));
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String searchTerm) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String searchTerm) {
+                delayTimerForSearch.removeCallbacksAndMessages(null);
+                delayTimerForSearch.postDelayed(() -> filterItems(searchTerm), 300);
+                return true;
+            }
+        });
+        return true;
+    }
 
     @Nullable private String readAll(@Nullable Uri inUri) {
         if (inUri != null) {
@@ -106,18 +135,26 @@ public class CSVTableActivity extends AppCompatActivity {
         return intent.getData();
     }
 
-    private void initializeTableView(TableView mTableView, @NonNull CsvItem header,@NonNull List<CsvItem> pojos) {
-        List<ColumnDefinition<CsvItem>> columnDefinitions = TestData.createColumnDefinitions(header);
-        // Create TableView View model class  to group view models of TableView
-        TableViewModel<CsvItem> tableViewModel = new TableViewModel<>(columnDefinitions, pojos);
+    private TableViewAdapter<CsvItem> tableViewAdapter;
+    private List<ColumnDefinition<CsvItem>> columnDefinitions;
+    private IRepository<CsvItem> repository;
+
+    private void initializeTableView(TableView tableView, @NonNull CsvItem header,@NonNull List<CsvItem> pojos) {
+        columnDefinitions = TestData.createColumnDefinitions(header);
 
         // Create TableView Adapter
-        TableViewAdapter<CsvItem> tableViewAdapter = new TableViewAdapter<>();
-        mTableView.setAdapter(tableViewAdapter);
-        tableViewAdapter.setAllItems(tableViewModel);
+        tableViewAdapter = new TableViewAdapter<>();
+        tableView.setAdapter(tableViewAdapter);
 
-        mTableView.setTableViewListener(new TableViewListener(mTableView));
+        repository =new CsvItemRepository(pojos);
+        filterItems(null);
 
+        tableView.setTableViewListener(new TableViewListener(tableView));
     }
 
+    private void filterItems(String searchTerm) {
+        TableViewModel<CsvItem> tableViewModel = new TableViewModel<>(columnDefinitions, repository.getPojos(searchTerm));
+        tableViewAdapter.setAllItems(tableViewModel.getColumnHeaderList(), tableViewModel
+                .getRowHeaderList(), tableViewModel.getCellList());
+    }
 }
