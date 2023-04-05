@@ -3,9 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <!-- Search view widget as item in menu -->
     <item
-        android:id="@+id/search_bar"
+        android:id="@+id/cmd_search_bar"
         android:title="@android:string/search_go"
         android:icon="@android:drawable/ic_menu_search"
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="always|collapseActionView" />
+    <item android:id="@+id/cmd_file_open"
+        android:title="@string/title_open_file"
+        app:showAsAction="ifRoom"
+        />
 </menu>
