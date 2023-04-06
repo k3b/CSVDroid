@@ -9,6 +9,7 @@
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="always|collapseActionView" />
     <item android:id="@+id/cmd_file_open"
+        android:icon="@drawable/ic_action_holo_dark_folder"
         android:title="@string/title_open_file"
         app:showAsAction="ifRoom"
         />
