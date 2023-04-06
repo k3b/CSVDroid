@@ -85,8 +85,15 @@ public class CsvItemRepositoryAndroid extends CsvItemRepository {
     }
 
     protected static Uri getSourceUri(Intent intent) {
-        if (intent == null) return null;
-        return intent.getData();
+        Uri result = null; // not found
+        if (intent != null) {
+            // used by VIEW or EDIT
+            result = intent.getData();
+
+            // used by send(to)
+            if (result == null) result = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        }
+        return result;
     }
 
 }
