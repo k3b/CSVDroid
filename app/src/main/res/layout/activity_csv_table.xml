@@ -19,8 +19,8 @@
 
     <com.evrencoskun.tableview.TableView
         android:id="@+id/tableview"
-        android:layout_width="409dp"
-        android:layout_height="517dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         app:allow_click_inside_cell="true"
         app:allow_click_inside_column_header="true"
         app:allow_click_inside_row_header="true"

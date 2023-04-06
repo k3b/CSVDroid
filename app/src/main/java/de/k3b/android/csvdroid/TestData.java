@@ -66,9 +66,14 @@ public class TestData {
         int colCount = header.getColumnCount();
         for(int i = 0; i < colCount; i++) {
             final int colNo = i;
-            definitions.add(new ColumnDefinition<>(header.getColumn(i, ""), r -> r.getColumn(colNo, "")));
+            definitions.add(new ColumnDefinition<>(header.getColumn(i, ""), r -> max(r.getColumn(colNo, ""),30)));
         }
-        definitions.add(new ColumnDefinition<>("Comments", CsvItem::getComments));
+        definitions.add(new ColumnDefinition<>("Comments", r -> max(r.getComments(),25)));
         return definitions;
+    }
+
+    @NotNull private static String max(@NotNull String text, int maxLen) {
+        if (text.length() > maxLen) text = text.substring(0,maxLen - 2) + " …";
+        return text;
     }
 }

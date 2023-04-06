@@ -10,14 +10,14 @@
 
 ## CSV Support
 
-* **Linedelimiter:** Each CSV-line seperated by **<nl>-char** will become a row in the table. 
+* **Lineseperator:** Each CSV-line seperated by **&lt;nl>-char** will become a row in the table. 
   * if the line is not empty
   * if the line is not a comment or 
   * if there no column in Textdelimiter-Mode.
 * **Comment:** CSV may contain contain "comment lines" if the line starts with "# ". 
   * "comment lines" will not become rows oft it-s own.
 * **Header:** The first non-empty non-comment-line will become the "table-header"
-* **Columnseperator:** CSV columns must be seperated by <tabulator>-char or one of these chars: ,;:| 
+* **Columnseperator:** CSV columns must be seperated by &lt;tabulator>-char or one of these chars: ,;:| 
   * The seperator is infered from the Header.
 * **Textdelimiter:** If a CSV column starts and ends with the Textdelimiter-Char the column may contain any char.
   * If a Header-column starts with " or ' this will become the Textdelimiter-char. Default is " .

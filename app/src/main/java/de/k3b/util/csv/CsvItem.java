@@ -69,7 +69,7 @@ public class CsvItem  implements IModelWithId {
     @NotNull
     public String getComments() {
         if (this.comments == null || this.comments.length == 0) return "";
-        return String.join("\n", comments);
+        return String.join("\n", comments).trim();
     }
 
     public int getColumnCount() {
