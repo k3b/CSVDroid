@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">CSVDroid</string>
+    <string name="app_name">📅🔍_CSVDroid</string>
     <string name="search_hint">Only rows containing this text will be shown</string>
-    <string name="title_open_file">Open ...</string>
+    <string name="title_open_file">Open …</string>
     <string name="permission_title_rationale">Permission needed</string>
     <string name="permission_read_storage_rationale">Storage reading permission needed to pick files.</string>
     <string name="permission_error">Missing permisions</string>

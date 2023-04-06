@@ -25,6 +25,8 @@ import android.net.Uri;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.opencsv.exceptions.CsvValidationException;
+
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -47,14 +49,15 @@ public class CsvItemRepositoryAndroid extends CsvItemRepository {
         super(header, pojos);
     }
 
-    public static CsvItemRepository create(Activity activity) {
-        return create(activity, getSourceUri(activity.getIntent()));
+    @Nullable
+    public static CsvItemRepository createOrNull(@NotNull Activity activity) {
+        return createOrNull(activity, getSourceUriOrNull(activity.getIntent()));
     }
 
     @Nullable
-    public static CsvItemRepository create(Context ctx, Uri sourceUri) {
+    public static CsvItemRepository createOrNull(@NotNull Context ctx, @Nullable Uri sourceUri) {
         if (sourceUri != null) {
-            String csv = readAll(ctx, sourceUri);
+            String csv = readAllOrNull(ctx, sourceUri);
 
             if (csv != null) {
                 try {
@@ -68,10 +71,15 @@ public class CsvItemRepositoryAndroid extends CsvItemRepository {
     }
 
     @Nullable
-    private static String readAll(Context ctx, @Nullable Uri inUri) {
+    public static CsvItemRepository createOrThrow(@NotNull Context ctx, @Nullable Uri sourceUri) throws CsvValidationException, IOException {
+        return create(readAllOrThrow(ctx, sourceUri));
+    }
+
+    @Nullable
+    private static String readAllOrNull(Context ctx, @Nullable Uri inUri) {
         if (inUri != null) {
             try (InputStream is = ctx.getContentResolver().openInputStream(inUri)) {
-                return IOUtils.toString(is, Charset.defaultCharset());
+                return readAllOrThrow(is);
             } catch (IOException exception) {
                 showError(ctx, exception, "Cannot read from " + inUri);
             }
@@ -79,12 +87,20 @@ public class CsvItemRepositoryAndroid extends CsvItemRepository {
         return null;
     }
 
+    @NotNull private static String readAllOrThrow(Context ctx, @Nullable Uri inUri) throws IOException {
+        return readAllOrThrow(ctx.getContentResolver().openInputStream(inUri));
+    }
+
+    @NotNull private static String readAllOrThrow(InputStream is) throws IOException {
+        return IOUtils.toString(is, Charset.defaultCharset());
+    }
+
     public static void showError(Context ctx, Exception exception, String text) {
         Toast.makeText(ctx, text, Toast.LENGTH_LONG).show();
         Log.e(TAG, text, exception);
     }
 
-    protected static Uri getSourceUri(Intent intent) {
+    protected static Uri getSourceUriOrNull(Intent intent) {
         Uri result = null; // not found
         if (intent != null) {
             // used by VIEW or EDIT
