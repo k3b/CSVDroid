@@ -48,6 +48,9 @@ dependencies {
     // https://mvnrepository.com/artifact/commons-io/commons-io
     implementation 'commons-io:commons-io:2.11.0'
 
+    // https://github.com/albfernandez/juniversalchardet
+    // implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
+
     // submodule "TableView" (https://github.com/k3b/TableView branch = tableviewK3b) in ../TableView/tablevie...
     implementation project(':tableview')
     implementation project(':tableviewutil')

@@ -27,6 +27,7 @@ rootProject.name = "CSVDroid"
  */
 
 include ':app'
+include ':pvr2csv'
 
 // receipe how to inclunde taken from https://stackoverflow.com/questions/37883086/git-submodules-in-existing-gradle-project
 include(':tableview')
