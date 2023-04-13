@@ -16,28 +16,28 @@ for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>
  */
-package de.k3b.pvr;
+package de.k3b.util;
 
-import java.io.File;
-
-/**
- * Extracts csv-data from extracted-pvr-txt files.
- * *.txt -> csv .
- *
- * film-txt-fileformat see PvrTxt.md
- */
-public class PvrTxt2CsvRunner {
-    static String root = "C:/Users/eve/StudioProjects/github/CSVDroid/pvr2csv/downloads/cds_dvds";
-
-    public static void main(String[] args) throws Exception {
-        // System.out.println("hello world");
-
-        File dir = new File(root);
-        // System.out.println("Lade " + dir.getAbsolutePath());
-        try(PvrTxt2CsvFileConverter converter = new PvrTxt2CsvFileConverter(new File(dir, "../PvrTxt.csv"))) {
-
-            converter.writeHeader();
-            converter.listFiles(dir, "");
+public class FileUtils {
+    public static String fixFileName(String filename) {
+        String outTxtName = filename;
+        String illegalChars = "/\\:. ,;@|><\n\r\t";
+        int len = illegalChars.length();
+        for (int i = 0; i < len; i++) {
+            outTxtName = outTxtName.replace(illegalChars.charAt(i), '_');
         }
+        outTxtName = outTxtName
+                .replace("ä","ae")
+                .replace("Ä","Ae")
+                .replace("ö","oe")
+                .replace("Ö","Oe")
+                .replace("ü","ue")
+                .replace("Ü","Ue")
+                .replace("ß","ss")
+                .replace("__","_")
+        ;
+        return outTxtName;
     }
+
+
 }

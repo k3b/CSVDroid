@@ -29,15 +29,21 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * Extracts csv-data from extracted pvr txt files.
+ * Extracts csv-data from extracted-pvr-txt files.
+ * *.txt -> csv .
+ *
+ * film-txt-fileformat see PvrTxt.md
  */
 public class PvrTxt2CsvFileConverter  implements AutoCloseable {
-    private final PvrWriter writer;
+    public static final Charset FILM_TXT_ENCODING = Charset.forName("windows-1252");
+    private final PvrWriter csvWriter;
 
     private final SimpleDateFormat DATE_RFC3339 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    // private final File csvOutFile;
 
-    public PvrTxt2CsvFileConverter(File outFile) throws IOException {
-        this.writer = new PvrWriter(outFile);
+    public PvrTxt2CsvFileConverter(File csvOutFile) throws IOException {
+        // this.csvOutFile = csvOutFile;
+        this.csvWriter = new PvrWriter(csvOutFile);
     }
 
     public void listFiles(File dir, String relPath) {
@@ -56,7 +62,7 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
 
         try (BufferedReader in = new BufferedReader(
                 new InputStreamReader(
-                        new FileInputStream(file), Charset.forName("windows-1252")))) {
+                        new FileInputStream(file), FILM_TXT_ENCODING))) {
             String dateLastModified = getLastModified(file);
 
             String dvd = readLine(in, null);
@@ -89,6 +95,12 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
                     toUpper(dvd), toUpper(source), toDate(dateRecorded),
                     title, toMinutes(minutes), info.toString(),
                     description.toString(), dateLastModified);
+            /*
+            new ToPvrTxtFileConverter(csvOutFile).writeTxtFile(relPath + file.getName(),
+                    toUpper(source), toDate(dateRecorded),
+                    title, toMinutes(minutes), info.toString(),
+                    description.toString(), file.lastModified());
+             */
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -138,11 +150,11 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
     }
 
     public void writeRow(String... columns) {
-        writer.writeRow(columns);
+        csvWriter.writeRow(columns);
     }
 
     @Override
     public void close() throws Exception {
-        writer.close();
+        csvWriter.close();
     }
 }

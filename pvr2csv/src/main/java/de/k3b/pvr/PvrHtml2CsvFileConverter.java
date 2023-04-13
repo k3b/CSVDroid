@@ -45,9 +45,11 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
     private final SimpleDateFormat DATE_RFC3339 = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
 
     private final Set<String> titles = new HashSet<>();
+    private final ToPvrTxtFileConverter toPvrTxtFileConverter;
 
     public PvrHtml2CsvFileConverter(File outFile) throws IOException {
         this.writer = new PvrWriter(outFile);
+        toPvrTxtFileConverter = new ToPvrTxtFileConverter(outFile);
     }
 
 
@@ -92,6 +94,11 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
                         title,
                         minutes, kilobytes,
                         description,dateLastModified, url);
+
+                toPvrTxtFileConverter.writeTxtFile(relPath + file.getName() + "_" + title,
+                        source, dateRecorded,
+                        title, minutes, null,
+                        description, file.lastModified());
             }
 
             // System.out.println("done");
