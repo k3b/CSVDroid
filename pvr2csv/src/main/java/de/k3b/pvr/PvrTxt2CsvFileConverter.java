@@ -24,9 +24,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
+
+import de.k3b.util.ValueConverter;
 
 /**
  * Extracts csv-data from extracted-pvr-txt files.
@@ -38,7 +38,6 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
     public static final Charset FILM_TXT_ENCODING = Charset.forName("windows-1252");
     private final PvrWriter csvWriter;
 
-    private final SimpleDateFormat DATE_RFC3339 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     // private final File csvOutFile;
 
     public PvrTxt2CsvFileConverter(File csvOutFile) throws IOException {
@@ -63,7 +62,7 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
         try (BufferedReader in = new BufferedReader(
                 new InputStreamReader(
                         new FileInputStream(file), FILM_TXT_ENCODING))) {
-            String dateLastModified = getLastModified(file);
+            String dateLastModified = ValueConverter.getLastModified(file);
 
             String dvd = readLine(in, null);
 
@@ -92,8 +91,8 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
             }
 
             writeRow(relPath, file.getName(),
-                    toUpper(dvd), toUpper(source), toDate(dateRecorded),
-                    title, toMinutes(minutes), info.toString(),
+                    ValueConverter.toUpper(dvd), ValueConverter.toUpper(source), ValueConverter.toDate(dateRecorded),
+                    title, ValueConverter.toMinutes(minutes), info.toString(),
                     description.toString(), dateLastModified);
             /*
             new ToPvrTxtFileConverter(csvOutFile).writeTxtFile(relPath + file.getName(),
@@ -110,33 +109,6 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
         writeRow("relPath", "file",
                 "dvd", "source", "dateRecorded", "title", " minutes",
                 "info", "description", "dateLastModified");
-    }
-
-    private String toUpper(String source) {
-        if (source == null) return "";
-        return source.toUpperCase(Locale.ROOT);
-    }
-
-    private String toDate(String date) {
-        if (date == null) return "";
-        return date;
-    }
-
-    private String toMinutes(String minutes) {
-        if (minutes == null) return "";
-        String[] split = minutes.trim().split("[:']");
-
-        int minuten = Integer.parseInt(split[split.length - 1]);
-        if (split.length > 1) {
-            minuten += 60 * Integer.parseInt(split[0]);
-        }
-        return "" + minuten;
-    }
-
-    private String getLastModified(File file) {
-        long lastModified = file.lastModified();
-        if (lastModified == 0) return "";
-        return DATE_RFC3339.format(new Date(lastModified));
     }
 
     private String[] readColumns(BufferedReader in, String notFoundValue) throws IOException {

@@ -21,16 +21,20 @@ package de.k3b.pvr;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.jsoup.safety.Safelist;
 import org.jsoup.select.Elements;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
+import de.k3b.util.ValueConverter;
 
 /**
  * Extracts csv-data from pvr web gui.
@@ -40,9 +44,16 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
     private static final Safelist REMOVE_ALL_HTML = Safelist.none();
     public static final String[] EMPTY = new String[0];
     public static final String URL_PARAM_FILE = "file=";
-    private final PvrWriter writer;
 
-    private final SimpleDateFormat DATE_RFC3339 = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
+    // Mo 29.12.2008, 09:21
+    public static final DateFormat DATE_PVR = new SimpleDateFormat("d.M, H:mm", Locale.getDefault());
+            // DateFormat.getDateTimeInstance(DateFormat.MEDIUM,DateFormat.SHORT);
+            // new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
+
+    public static final DateFormat DATE_PVR_WITH_YEAR = new SimpleDateFormat("d.M.yyyy, H:mm", Locale.getDefault());
+
+    public static final DateFormat[] DATE_FORMATS = {ValueConverter.DATE_RFC3339, DATE_PVR, DATE_PVR_WITH_YEAR};
+    private final PvrWriter writer;
 
     private final Set<String> titles = new HashSet<>();
     private final ToPvrTxtFileConverter toPvrTxtFileConverter;
@@ -66,10 +77,14 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
 
     private void writeFile(File file, String relPath) {
         try {
-            String dateLastModified = getLastModified(file);
+            String dateLastModified = ValueConverter.getLastModified(file);
             // new Simple
             Document doc = Jsoup.parse(file, "UTF-8").outputSettings(NO_REFORMATTING);
-            Elements movies = doc.select("#movies"); // #id
+
+            // <br> and <p> are interpreted as \n and \n\n
+            doc.select("br").append("\n");
+            doc.select("p").prepend("\n\n");
+            // Elements movies = doc.select("#movies"); // #id
             Elements rows = doc.select(".tm_row"); // .css-class
 
             for (Element row : rows) {
@@ -79,11 +94,12 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
                 String title = row.attr("data-title");
                 String description = getText(row.select(".tm_desc"));
 
+                // \n ProSieben / Fr 10.1.2020, 15:35\n 19:10 min. / 564.18 MB
                 String[] parameters = getSiblingSplit(row, ".tm_title", "[\\n/]");
-                String source = get(parameters, 0);
-                String dateRecorded = get(parameters, 1);
-                String minutes = get(parameters, 2);
-                String kilobytes = get(parameters, 3);
+                String source = ValueConverter.getAt(parameters, 0); // ProSieben
+                String dateRecorded = toDate(ValueConverter.getAt(parameters, 1)); // Fr 10.1.2020, 15:35
+                String minutes = ValueConverter.toMinutes(ValueConverter.getAt(parameters, 2));
+                String kilobytes = ValueConverter.toKilobytes(ValueConverter.getAt(parameters, 3));
 
                 String url = getUrl(row);
 
@@ -105,6 +121,15 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static String toDate(String value) {
+        // Mo ....
+        if (value != null && value.length() > 3 && value.charAt(2) == ' ') {
+            // remove DayOfWeek
+            return ValueConverter.toDate(value.substring(3), DATE_FORMATS);
+        }
+        return ValueConverter.toDate(value, DATE_FORMATS);
     }
 
     /**
@@ -142,21 +167,12 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
         return url;
     }
 
-    private String get(String[] parameters, int index) {
-        if (parameters != null && index >= 0 && index < parameters.length) return parameters[index].trim();
-        return "";
-    }
-
-    private String getLastModified(File file) {
-        long lastModified = file.lastModified();
-        if (lastModified == 0) return "";
-        return DATE_RFC3339.format(new Date(lastModified));
-    }
     private String[] getSiblingSplit(Element row, String cssQuery, String splitRexExp) {
         Element titleElement = row.selectFirst(cssQuery);
         if (titleElement != null) {
             int offset = titleElement.text().trim().length();
-            String textAfterElement = getText(titleElement.parent().html()).trim().substring(offset);
+            String textAfterElement = getText(titleElement.parent().html()).trim().substring(offset).trim();
+
             return textAfterElement.split(splitRexExp);
         }
         return EMPTY;
@@ -177,7 +193,11 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
     }
 
     private String getText(String html) {
-        return Jsoup.clean(html, "", REMOVE_ALL_HTML, NO_REFORMATTING);
+        // remove html tags
+        String withoutTags = Jsoup.clean(html, "", REMOVE_ALL_HTML, NO_REFORMATTING);
+
+        // translate entities. e.g. &auml; => ä
+        return Parser.unescapeEntities(withoutTags, true);
     }
 
     public void writeRow(String... columns) {
