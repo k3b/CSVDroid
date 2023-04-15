@@ -24,6 +24,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 import de.k3b.util.ValueConverter;
@@ -36,6 +40,18 @@ import de.k3b.util.ValueConverter;
  */
 public class PvrTxt2CsvFileConverter  implements AutoCloseable {
     public static final Charset FILM_TXT_ENCODING = Charset.forName("windows-1252");
+
+    /**  "71224" -> "200"+"71224" */
+    private static final String YEAR_INT8_PREFIX = "200";
+    private  static final int YEAR_INT8LEN_MAX = "20071224".length();
+    private  static final int YEAR_INT8LEN_MIN = YEAR_INT8LEN_MAX - YEAR_INT8_PREFIX.length(); // 5;
+
+    private static final DateFormat DATE_INT8 = new SimpleDateFormat("yyyyMMdd", Locale.US);
+
+    private static final DateFormat DATE_GERMAN = new SimpleDateFormat("d.M.y", Locale.US);
+
+    private static final DateFormat[] DATE_FORMATS = {ValueConverter.DATE_RFC3339_SHORT, ValueConverter.DATE_RFC3339, DATE_GERMAN};
+
     private final PvrWriter csvWriter;
 
     // private final File csvOutFile;
@@ -91,7 +107,7 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
             }
 
             writeRow(relPath, file.getName(),
-                    ValueConverter.toUpper(dvd), ValueConverter.toUpper(source), ValueConverter.toDate(dateRecorded),
+                    ValueConverter.toUpper(dvd), ValueConverter.toUpper(source), toDate(dateRecorded),
                     title, ValueConverter.toMinutes(minutes), info.toString(),
                     description.toString(), dateLastModified);
             /*
@@ -102,6 +118,28 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
              */
         } catch (IOException ex) {
             ex.printStackTrace();
+        }
+    }
+
+    protected static String toDate(String value) {
+        Date result = null;
+
+        // 71021 -> 20071021 -> 2007-10-21
+        try {
+            String srcValue = "" + Integer.parseInt(value);
+            int intLen = srcValue.length();
+            if (intLen >= YEAR_INT8LEN_MIN && intLen < YEAR_INT8LEN_MAX) {
+                srcValue = YEAR_INT8_PREFIX.substring(0, YEAR_INT8LEN_MAX - intLen) + srcValue;
+            }
+            result = DATE_INT8.parse(srcValue);
+        } catch (NumberFormatException | ParseException e) {
+            result = null;
+        }
+
+        if (result == null) {
+            return ValueConverter.toDate(value, DATE_FORMATS);
+        } else {
+            return ValueConverter.DATE_RFC3339_SHORT.format(result);
         }
     }
 

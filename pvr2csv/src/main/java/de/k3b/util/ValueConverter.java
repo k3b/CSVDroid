@@ -27,14 +27,25 @@ import java.util.Locale;
 
 /** convert values from parsed source */
 public class ValueConverter {
-    public static final int MEGA = 1024;
-    public static final int GIGA = 1024 * MEGA;
-    public static final int KILOBYTES_MIN = 10;
-    public static final int KILOBYTES_MAX = 10 * MEGA * MEGA;
-    public static final int MINUTES_MIN = 5;
-    public static final int MINUTES_MAX = 600;
     public static boolean onErrorReturnOriginal = true;
-    public static final SimpleDateFormat DATE_RFC3339 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    public static final SimpleDateFormat DATE_RFC3339 = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
+    public static final SimpleDateFormat DATE_RFC3339_SHORT = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+
+    /** translate unit to kilobytes */
+    private static final int MEGA = 1024;
+    private static final int GIGA = 1024 * MEGA;
+
+    /** kilobytes must be between KILOBYTES_MIN and KILOBYTES_MAX. Else error */
+    private static final int KILOBYTES_MIN = 10;
+    private static final int KILOBYTES_MAX = 10 * MEGA * MEGA;
+
+    /** minutes must be between MINUTES_MIN and MINUTES_MAX. Else error */
+    private static final int MINUTES_MIN = 5;
+    private static final int MINUTES_MAX = 600;
+
+    /** date.year must be between YEAR_MIN and YEAR_MAX. Else error */
+    private static final int YEAR_MIN = 1980;
+    private static final int YEAR_MAX = 2080;
 
     public static String toUpper(String value) {
         if (value == null) return "";
@@ -63,11 +74,17 @@ public class ValueConverter {
                 // ignore error
             }
         }
-        if (result != null) {
+        if (result != null && getYear(result) >= YEAR_MIN && getYear(result) <= YEAR_MAX) {
             return formatters[0].format(result);
         }
         if (onErrorReturnOriginal) return value;
         return "";
+    }
+
+    private static int getYear(Date result) {
+        // getYear(1980) returns "80"
+        // getYear(2001) returns "101"
+        return result.getYear() + 1900;
     }
 
     public static String toKilobytes(String value) {

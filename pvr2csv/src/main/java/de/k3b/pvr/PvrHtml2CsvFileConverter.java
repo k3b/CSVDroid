@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -46,13 +45,13 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
     public static final String URL_PARAM_FILE = "file=";
 
     // Mo 29.12.2008, 09:21
-    public static final DateFormat DATE_PVR = new SimpleDateFormat("d.M, H:mm", Locale.getDefault());
+    private static final DateFormat DATE_PVR = new SimpleDateFormat("d.M, H:mm", Locale.US);
             // DateFormat.getDateTimeInstance(DateFormat.MEDIUM,DateFormat.SHORT);
             // new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
 
-    public static final DateFormat DATE_PVR_WITH_YEAR = new SimpleDateFormat("d.M.yyyy, H:mm", Locale.getDefault());
+    private static final DateFormat DATE_PVR_WITH_YEAR = new SimpleDateFormat("d.M.yyyy, H:mm", Locale.US);
 
-    public static final DateFormat[] DATE_FORMATS = {ValueConverter.DATE_RFC3339, DATE_PVR, DATE_PVR_WITH_YEAR};
+    private static final DateFormat[] DATE_FORMATS = {ValueConverter.DATE_RFC3339, ValueConverter.DATE_RFC3339_SHORT, DATE_PVR, DATE_PVR_WITH_YEAR};
     private final PvrWriter writer;
 
     private final Set<String> titles = new HashSet<>();

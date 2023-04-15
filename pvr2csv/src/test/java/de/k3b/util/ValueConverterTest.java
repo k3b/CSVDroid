@@ -72,5 +72,10 @@ public class ValueConverterTest {
         ValueConverter.onErrorReturnOriginal = false;
         assertEquals("error hide", "", ValueConverter.toDate("hallo world"));
 
+        assertEquals("Before 1980", "", ValueConverter.toDate("1979-12-29 09:21"));
+        assertEquals("After 2080", "", ValueConverter.toDate("2081-12-29 09:21"));
+
+        // assertEquals("not implemented: wrong month", "", ValueConverter.toDate("1999-13-01 09:21"));
+        // assertEquals("not implemented: wrong day of week", "", ValueConverter.toDate("2079-12-32 09:21"));
     }
 }
