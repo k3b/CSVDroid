@@ -22,12 +22,6 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-import java.text.DateFormat;
-import java.util.Date;
-import java.util.Locale;
-
-import de.k3b.pvr.PvrHtml2CsvFileConverter;
-
 public class ValueConverterTest {
 
     @Test
@@ -36,9 +30,13 @@ public class ValueConverterTest {
         assertEquals("74", ValueConverter.toMinutes("1'14"));
         assertEquals("12", ValueConverter.toMinutes("12:59 min"));
 
-        // errors
-        assertEquals("-1:59 min.", ValueConverter.toMinutes("-1:59 min."));
-        assertEquals("hallo world", ValueConverter.toMinutes("hallo world"));
+        // errorhandling
+        assertEquals("error pass through", "hallo world", ValueConverter.toMinutes("hallo world"));
+
+        ValueConverter.onErrorReturnOriginal = false;
+        assertEquals("error hide", "", ValueConverter.toMinutes("hallo world"));
+
+        assertEquals("", ValueConverter.toMinutes("-1:59 min."));
     }
 
     @Test
@@ -47,29 +45,32 @@ public class ValueConverterTest {
         assertEquals("1", ValueConverter.toKilobytes("1"));
         assertEquals("10", ValueConverter.toKilobytes("10 kb"));
         assertEquals("1024", ValueConverter.toKilobytes("1 mb"));
-        assertEquals("" + (1024*1024), ValueConverter.toKilobytes("1 gb"));
+        assertEquals("" + (1024 * 1024), ValueConverter.toKilobytes("1 gb"));
 
-        assertEquals("1536", ValueConverter.toKilobytes("1.5 mb"));
+        assertEquals("" + (int) (1024 * 1.5), ValueConverter.toKilobytes("1.5 mb"));
 
         assertEquals("17", ValueConverter.toKilobytes("17 hallo world"));
 
+        // errorhandling
+        assertEquals("error pass through", "hallo world", ValueConverter.toKilobytes("hallo world"));
 
-        // errors
-        assertEquals("hallo world", ValueConverter.toKilobytes("hallo world"));
+        ValueConverter.onErrorReturnOriginal = false;
+        assertEquals("error hide", "", ValueConverter.toKilobytes("hallo world"));
+
+        assertEquals("to small", "", ValueConverter.toKilobytes("1"));
     }
 
     @Test
     public void toDate() {
+        ValueConverter.onErrorReturnOriginal = false;
+        assertEquals("Can parse date", "2008-12-29 09:21", ValueConverter.toDate("2008-12-29 09:21"));
+
+        // errorhandling
         ValueConverter.onErrorReturnOriginal = true;
-        assertEquals("2008-12-29 09:21", ValueConverter.toDate("2008-12-29 09:21"));
+        assertEquals("error pass through", "hallo world", ValueConverter.toDate("hallo world"));
 
-        String d = PvrHtml2CsvFileConverter.DATE_PVR_WITH_YEAR.format(new Date(2008,12 - 1,29,9,21));
+        ValueConverter.onErrorReturnOriginal = false;
+        assertEquals("error hide", "", ValueConverter.toDate("hallo world"));
 
-        assertEquals("2008-12-29 09:21", PvrHtml2CsvFileConverter.toDate("29.12.2008, 09:21"));
-        assertEquals("2008-12-29 09:21", PvrHtml2CsvFileConverter.toDate("Mo 29.12.2008, 09:21"));
-
-        assertEquals("2019-01-02 04:37", PvrHtml2CsvFileConverter.toDate("Mo 2.1.2019, 4:37"));
-        // error
-        assertEquals("hallo world", PvrHtml2CsvFileConverter.toDate("hallo world"));
     }
 }

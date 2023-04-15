@@ -123,7 +123,7 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
         }
     }
 
-    public static String toDate(String value) {
+    protected static String toDate(String value) {
         // Mo ....
         if (value != null && value.length() > 3 && value.charAt(2) == ' ') {
             // remove DayOfWeek

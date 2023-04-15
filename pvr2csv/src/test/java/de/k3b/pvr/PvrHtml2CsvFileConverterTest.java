@@ -18,18 +18,21 @@ this program. If not, see <http://www.gnu.org/licenses/>
  */
 package de.k3b.pvr;
 
-import org.junit.Test;
-
 import static org.junit.Assert.*;
 
-/**
- * Example local unit test, which will execute on the development machine (host).
- *
- * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
- */
-public class ExampleUnitTest {
+import org.junit.Test;
+
+import de.k3b.util.ValueConverter;
+
+public class PvrHtml2CsvFileConverterTest {
     @Test
-    public void addition_isCorrect() {
-        assertEquals(4, 2 + 2);
+    public void toDate() {
+        ValueConverter.onErrorReturnOriginal = true;
+        assertEquals("2008-12-29 09:21", PvrHtml2CsvFileConverter.toDate("29.12.2008, 09:21"));
+        assertEquals("2008-12-29 09:21", PvrHtml2CsvFileConverter.toDate("Mo 29.12.2008, 09:21"));
+
+        assertEquals("2019-01-02 04:37", PvrHtml2CsvFileConverter.toDate("Mo 2.1.2019, 4:37"));
+        // error
+        assertEquals("hallo world", PvrHtml2CsvFileConverter.toDate("hallo world"));
     }
 }
