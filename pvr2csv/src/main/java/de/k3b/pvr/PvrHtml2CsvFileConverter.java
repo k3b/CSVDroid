@@ -31,6 +31,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 import de.k3b.util.ValueConverter;
@@ -64,7 +65,7 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
 
 
     public void listFiles(File dir, String relPath) {
-        for (File file : dir.listFiles()) {
+        for (File file : Objects.requireNonNull(dir.listFiles())) {
             String fileName = file.getName();
             String lowerCase = fileName.toLowerCase(Locale.ROOT);
             if (file.isFile() && (lowerCase.endsWith(".htm") || lowerCase.endsWith(".html"))) {
@@ -170,7 +171,7 @@ public class PvrHtml2CsvFileConverter  implements AutoCloseable {
         Element titleElement = row.selectFirst(cssQuery);
         if (titleElement != null) {
             int offset = titleElement.text().trim().length();
-            String textAfterElement = getText(titleElement.parent().html()).trim().substring(offset).trim();
+            String textAfterElement = getText(Objects.requireNonNull(titleElement.parent()).html()).trim().substring(offset).trim();
 
             return textAfterElement.split(splitRexExp);
         }

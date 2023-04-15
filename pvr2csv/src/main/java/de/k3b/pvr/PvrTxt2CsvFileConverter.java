@@ -24,11 +24,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 
 import de.k3b.util.ValueConverter;
 
@@ -62,7 +64,7 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
     }
 
     public void listFiles(File dir, String relPath) {
-        for (File file : dir.listFiles()) {
+        for (File file : Objects.requireNonNull(dir.listFiles())) {
             String fileName = file.getName();
             String lowerCase = fileName.toLowerCase(Locale.ROOT);
             if (file.isFile() && lowerCase.endsWith(".txt") && !lowerCase.contains(".sub.")) {
@@ -77,7 +79,7 @@ public class PvrTxt2CsvFileConverter  implements AutoCloseable {
 
         try (BufferedReader in = new BufferedReader(
                 new InputStreamReader(
-                        new FileInputStream(file), FILM_TXT_ENCODING))) {
+                        Files.newInputStream(file.toPath()), FILM_TXT_ENCODING))) {
             String dateLastModified = ValueConverter.getLastModified(file);
 
             String dvd = readLine(in, null);
