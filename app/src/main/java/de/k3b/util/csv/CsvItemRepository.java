@@ -16,23 +16,51 @@ for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>
  */
-package de.k3b.android.csvdroid;
+package de.k3b.util.csv;
+
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 import de.k3b.util.IRepository;
-import de.k3b.util.csv.CsvItem;
 
+/**
+ * Manage the csv-file content:
+ * * {@link #getHeader()}
+ * * {@link #getPojos()}
+ * * {@link #getPojos(String)} for searchfilter
+ */
 public class CsvItemRepository implements IRepository<CsvItem> {
+    @NotNull private final String[] header;
     @NotNull private final List<CsvItem> pojos;
 
-    public CsvItemRepository(@NotNull List<CsvItem> pojos) {
+    public CsvItemRepository(@NotNull String csv) throws CsvValidationException, IOException {
+        try (CSVReader csvReader = CsvUtil.openCsvOrThrow(csv)) {
+            CsvItem csvHeader = CsvUtil.getNext(csvReader, null);
+            String[] header = csvHeader == null ? null : csvHeader.getColumns();
+            if (header == null || header.length == 0) {
+                throw new CsvValidationException("Empty/no Header");
+            }
+            this.header = header;
+            this.pojos = CsvUtil.getAll(csvReader, this.header);
+        }
+    }
+
+    public CsvItemRepository(@NotNull String[] header, @NotNull List<CsvItem> pojos) {
+        this.header = header;
         this.pojos = pojos;
+    }
+
+    @NotNull
+    public String[] getHeader() {
+        return header;
     }
 
     @NotNull public List<CsvItem> getPojos() {

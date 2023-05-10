@@ -52,5 +52,4 @@ public class StringUtils {
         }
         return org.apache.commons.lang3.StringUtils.INDEX_NOT_FOUND;
     }
-
 }

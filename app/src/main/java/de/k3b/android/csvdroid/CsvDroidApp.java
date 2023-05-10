@@ -16,15 +16,13 @@ for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>
  */
-package de.k3b.util;
+package de.k3b.android.csvdroid;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import android.app.Application;
 
-import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
-public interface IRepository<POJO> {
-    @NotNull String[] getHeader();
-    @NotNull List<POJO> getPojos();
-    @NotNull List<POJO> getPojos(@Nullable String searchTerm);
+public class CsvDroidApp extends Application {
+    public static final Executor executor = Executors.newFixedThreadPool(4);
 }

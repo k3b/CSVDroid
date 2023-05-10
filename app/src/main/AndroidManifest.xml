@@ -13,6 +13,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.CSVDroid"
+        android:name=".CsvDroidApp"
         tools:targetApi="31">
         <activity
             android:name=".CSVTableActivity"

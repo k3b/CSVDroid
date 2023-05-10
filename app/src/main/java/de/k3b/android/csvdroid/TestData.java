@@ -35,7 +35,7 @@ import de.k3b.util.csv.CsvItem;
  */
 
 public class TestData {
-    @NotNull public static List<CsvItem> createSampleData(@NotNull CsvItem header, int rowCount) {
+    @NotNull public static List<CsvItem> createSampleData(@NotNull String[] header, int rowCount) {
         List<CsvItem> sampleData = new ArrayList<>();
         for(int itemNumber = 0; itemNumber < rowCount; itemNumber++) {
             sampleData.add(createSampleItem(header, itemNumber));
@@ -43,16 +43,16 @@ public class TestData {
         return sampleData;
     }
 
-    @NotNull public static CsvItem createSampleHeader(int columnCount) {
+    @NotNull public static String[]  createSampleHeader(int columnCount) {
         String[] columns = new String[columnCount];
         for(int i = 0; i < columnCount; i++) {
             columns[i] = "Col " + i;
         }
-        return new CsvItem(null, -1, columns, null);
+        return columns;
     }
 
-    @NotNull private static CsvItem createSampleItem(@NotNull CsvItem header, int itemNumber) {
-        int colCount = header.getColumnCount();
+    @NotNull private static CsvItem createSampleItem(@NotNull String[] header, int itemNumber) {
+        int colCount = header.length;
         String[] columns = new String[colCount];
         for(int i = 0; i < colCount; i++) {
             columns[i] = "Item " + itemNumber +
@@ -61,12 +61,12 @@ public class TestData {
         return new CsvItem(header, itemNumber, columns, new String[]{"Comment for Item " + itemNumber});
     }
 
-    @NotNull public static List<ColumnDefinition<CsvItem>> createColumnDefinitions(@NotNull CsvItem header) {
+    @NotNull public static List<ColumnDefinition<CsvItem>> createColumnDefinitions(@NotNull String[] header) {
         List<ColumnDefinition<CsvItem>> definitions = new ArrayList<>();
-        int colCount = header.getColumnCount();
+        int colCount = header.length;
         for(int i = 0; i < colCount; i++) {
             final int colNo = i;
-            definitions.add(new ColumnDefinition<>(header.getColumn(i, ""), r -> max(r.getColumn(colNo, ""),30)));
+            definitions.add(new ColumnDefinition<>(header[i], r -> max(r.getColumn(colNo, ""),30)));
         }
         definitions.add(new ColumnDefinition<>("Comments", r -> max(r.getComments(),25)));
         return definitions;

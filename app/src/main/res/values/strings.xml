@@ -5,4 +5,11 @@
     <string name="permission_title_rationale">Permission needed</string>
     <string name="permission_read_storage_rationale">Storage reading permission needed to pick files.</string>
     <string name="permission_error">Missing permisions</string>
+
+    <string name="progress_loading_csv">Loading csv from %1$s</string>
+    <string name="progress_filtering">Applying \'%1$s\'</string>
+
+    <string name="error_load">Cannot load or parse from %1$s</string>
+    <string name="result_empty">No Csv found</string>
+    <string name="result_search_empty">No Csv found for \'%1$s\'</string>
 </resources>

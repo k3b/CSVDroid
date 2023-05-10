@@ -35,12 +35,12 @@ import java.util.Locale;
  */
 public class CsvItem  implements IModelWithId {
     @NotNull private final String id;
-    @Nullable private final CsvItem header;
+    @Nullable private final String[] header;
     final int linenumber;
     @NotNull final String[] columns;
     @Nullable final String[] comments;
 
-    public CsvItem(@Nullable CsvItem header, int linenumber, @NotNull String[] columns,@Nullable String[] comments) {
+    public CsvItem(@Nullable String[] header, int linenumber, @NotNull String[] columns,@Nullable String[] comments) {
         this.id = "" + linenumber;
         this.linenumber = linenumber;
         this.columns = columns;
@@ -58,7 +58,7 @@ public class CsvItem  implements IModelWithId {
     public String getColumn(int colNo, String notFoundValue) {
         // if there is no value return ""
         if (colNo < 0 || colNo >= columns.length
-                || (header != null && colNo >= header.columns.length)
+                || (header != null && colNo >= header.length)
                 || columns[colNo] == null) {
             return notFoundValue;
         }
@@ -74,6 +74,10 @@ public class CsvItem  implements IModelWithId {
 
     public int getColumnCount() {
         return columns.length;
+    }
+
+    public String[] getColumns() {
+        return columns.clone();
     }
 
     public boolean contains(@NotNull String searchTermLowerCase) {

@@ -2,16 +2,17 @@
 
 v onHeaderClick undo sorting of other headers
 
-* MutableLifedata
+* > MutableLifedata
   * repository
   * uri
   * header
   * pojos
-  * current csvItem
+  * ? current csvItem
   * filter
-* CSVTableActivity
-  * save(as) ??retyableSecurityPermission
-* DetailActivity
-* id + next + previous 
+  * CSVTableActivity
+    * status display 
+    * save(as) ??retryableSecurityPermission
+  * DetailActivity
+  * id + next + previous 
  
 

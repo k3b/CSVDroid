@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Replacement for CSVReaderBuilder...build() that infers the csv parameters
@@ -43,33 +44,30 @@ public class CsvUtil {
     public static final int BUFFER_SIZE = 8096;
     public static final String[] EMPTY = new String[0];
 
-    @Nullable
-    public static CSVReader openCsv(@Nullable String csv) throws IOException {
+    /** reader must be closed by caller */
+    @NotNull
+    public static CSVReader openCsvOrThrow(@NotNull String csv) throws IOException {
         BufferedReader bufferedReader = null;
         try  {
-            if (csv != null) {
-                // parser cannot handle empty lines if they are not "\r\n"
-                bufferedReader = new BufferedReader(new StringReader(csv.replace("\n", "\r\n")), BUFFER_SIZE);
-                CsvConfig csvConfig = inferCsvConfiguration(bufferedReader);
+            // parser cannot handle empty lines if they are not "\r\n"
+            bufferedReader = new BufferedReader(new StringReader(Objects.requireNonNull (csv,"csv must be not be null or empty").replace("\n", "\r\n")), BUFFER_SIZE);
+            CsvConfig csvConfig = inferCsvConfiguration(bufferedReader);
 
-                ICSVParser parser = new CSVParserBuilder()
-                        .withSeparator(csvConfig.getFieldDelimiterChar())
-                        .withQuoteChar(csvConfig.getQuoteChar())
-                        .build();
+            ICSVParser parser = new CSVParserBuilder()
+                    .withSeparator(csvConfig.getFieldDelimiterChar())
+                    .withQuoteChar(csvConfig.getQuoteChar())
+                    .build();
 
-                // reader will be closed by caller
-                return new CSVReaderBuilder(bufferedReader)
-                        .withSkipLines(0)
-                        .withCSVParser(parser)
-                        .withKeepCarriageReturn(true)
-                        .build();
-            }
+            // reader will be closed by caller
+            return new CSVReaderBuilder(bufferedReader)
+                    .withSkipLines(0)
+                    .withCSVParser(parser)
+                    .withKeepCarriageReturn(true)
+                    .build();
         } catch (IOException e) {
-            e.printStackTrace();
             bufferedReader.close();
+            throw new IOException("", e);
         }
-
-        return null;
     }
 
     @NotNull private static CsvConfig inferCsvConfiguration(@NotNull BufferedReader bufferedReader) throws IOException {
@@ -90,23 +88,34 @@ public class CsvUtil {
         }
     }
 
+    /**
+     * Reads the next non-comment-line from the csvReader and converts it to a {@link CsvItem}.
+     *
+     * Similar to {@link CSVReader#readNext()} but also handles/skipps csv comments.
+     */
     @Nullable
-    public static CsvItem getNext(@NotNull CSVReader csvReader, @Nullable CsvItem header) throws CsvValidationException, IOException {
+    public static CsvItem getNext(@NotNull CSVReader csvReader, @Nullable String[] header) throws CsvValidationException, IOException {
         List<String> comments = new ArrayList<>();
         String[] columns = csvReader.readNext();
-        if (columns == null) return null;
+        if (columns == null) return null; // End of File
 
         int lineNo = (int) csvReader.getLinesRead();
         while (columns != null && isComment(columns)) {
+            // remember comment-content
             comments.add(columns[0]);
+
+            // skip comment
             columns = csvReader.readNext();
         }
 
         return new CsvItem(header, lineNo, columns == null ? EMPTY : columns, toArray(comments));
     }
 
+    /**
+     * Read all remaining {@link CsvItem}s.
+     */
     @NotNull
-    public static List<CsvItem> getAll(@NotNull CSVReader csvReader, @Nullable CsvItem header) throws CsvValidationException, IOException {
+    public static List<CsvItem> getAll(@NotNull CSVReader csvReader, @Nullable String[] header) throws CsvValidationException, IOException {
         List<CsvItem> result = new ArrayList<>();
         CsvItem line;
         while ((line = getNext(csvReader, header)) != null)

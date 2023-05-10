@@ -19,7 +19,9 @@ this program. If not, see <http://www.gnu.org/licenses/>
 package de.k3b.android.csvdroid;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -27,7 +29,6 @@ import android.net.Uri;
 
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 
 import android.util.Log;
 import android.view.Menu;
@@ -44,24 +45,24 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
 
+import de.k3b.android.csvdroid.view.CsvListViewModel;
 import de.k3b.util.csv.CsvItem;
-import de.k3b.util.csv.CsvItemRepository;
 
 public class CSVTableActivity extends BaseActivity {
     private static final String TAG = CSVTableActivity.class.getSimpleName();
     private static final int PICK_CSV_FILE = 2;
-    public static final String KEY_CSV_FILE_URI = "csvFileUri";
     public static final String[] SUPPORTED_MIME_TYPES = {
-            "text/csv", "text/comma-separated-values"};
+            // standard
+            "text/csv",
+            // used by android
+            "text/comma-separated-values"
+    };
 
+    private CsvListViewModel viewModel;
     private final Handler delayTimerForSearch = new Handler();
 
     private TableViewAdapter<CsvItem> tableViewAdapter;
     private List<ColumnDefinition<CsvItem>> columnDefinitions;
-    private CsvItemRepository repository;
-
-    // persisted through InstanceState[KEY_CSV_FILE_URI] and SharedPreferences[KEY_CSV_FILE_URI]
-    private Uri currentCsvFileUri = null;
 
     /**
      * This is the permission granted replacement for {@link #onCreate(Bundle)}
@@ -71,39 +72,32 @@ public class CSVTableActivity extends BaseActivity {
         super.onCreateEx(savedInstanceState);
         setContentView(R.layout.activity_csv_table);
 
-        repository = null;
-        if (savedInstanceState == null) {
-            // initial app start: uri comes either (1) from intent
+        viewModel = new ViewModelProvider(this)
+                .get(CsvListViewModel.class);
+
+        List<CsvItem> itemList = viewModel.getCsvList().getValue();
+        if (itemList == null || itemList.isEmpty()) {
+            // initial app start: uri comes either
+            // (1) from intent
             // or (2) from last used
             // or (3) ask user
 
             // (1)
-            currentCsvFileUri = CsvItemRepositoryAndroid.getSourceUriOrNull(getIntent());
+            Uri currentCsvFileUri = CsvItemRepositoryAndroid.getSourceUriOrNull(getIntent());
 
             // (2)
-            if (currentCsvFileUri == null) currentCsvFileUri = getLastUsedUri();
+            if (currentCsvFileUri == null) currentCsvFileUri = viewModel.loadLastUsedUri();
 
-            try {
-                repository = CsvItemRepositoryAndroid.createOrThrow(this, currentCsvFileUri);
-            } catch (Exception e) {
-                // ignore error: csvFileUri==null or cannot read/parse file
+            if (currentCsvFileUri != null) {
+                executeLoadCsvFile(currentCsvFileUri);
+            } else {
+                // (3) ask user
+                openCsvFilePicker();
             }
-
-            // (3)
-            if (repository == null) openCsvFilePicker();
-        } else {
-            // ie after screen rotation
-            currentCsvFileUri = savedInstanceState.getParcelable(KEY_CSV_FILE_URI);
-            repository = CsvItemRepositoryAndroid.createOrNull(this, currentCsvFileUri);
         }
 
-        initializeTableView(findViewById(R.id.tableview), currentCsvFileUri);
-    }
-
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putParcelable(KEY_CSV_FILE_URI, currentCsvFileUri);
+        viewModel.getCsvList().observe(this,
+                l -> initializeTableView(findViewById(R.id.tableview),l));
     }
 
     @Override
@@ -113,6 +107,7 @@ public class CSVTableActivity extends BaseActivity {
         MenuItem i =  menu.findItem(R.id.cmd_search_bar);
         SearchView searchView = (SearchView) i.getActionView();
         searchView.setQueryHint(getString(R.string.search_hint));
+        searchView.setQuery(viewModel.getSearchTerm().getValue(), false);
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -121,9 +116,9 @@ public class CSVTableActivity extends BaseActivity {
             }
 
             @Override
-            public boolean onQueryTextChange(String searchTerm) {
+            public boolean onQueryTextChange(final String newSearchTerm) {
                 delayTimerForSearch.removeCallbacksAndMessages(null);
-                delayTimerForSearch.postDelayed(() -> setTableFilter(searchTerm), 300);
+                delayTimerForSearch.postDelayed(() -> viewModel.executeSearch(newSearchTerm), 300);
                 return true;
             }
         });
@@ -144,21 +139,16 @@ public class CSVTableActivity extends BaseActivity {
     public void onActivityResult(int requestCode, int resultCode,
                                  Intent resultData) {
         if (requestCode == PICK_CSV_FILE) {
-            if (resultCode == Activity.RESULT_OK
-                    && resultData != null
-                    && resultData.getData() != null) {
-                // from https://developer.android.com/training/data-storage/shared/documents-files#java
-                onOpenCsvFilePickerResult(resultData.getData());
-            } else {
-                // PICK_CSV_FILE canceled. Use demo data instead
-                loadDemoData();
-            }
+            onOpenCsvFilePickerResult(resultCode,resultData);
             return;
         }
 
         super.onActivityResult(requestCode, resultCode, resultData);
     }
 
+    /**
+     * Ask the userer for a CSV-file to be loaded
+     */
     private void openCsvFilePicker() {
         // from https://developer.android.com/training/data-storage/shared/documents-files#java
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT) // .ACTION_GET_CONTENT)
@@ -168,83 +158,70 @@ public class CSVTableActivity extends BaseActivity {
                 .putExtra(Intent.EXTRA_MIME_TYPES, SUPPORTED_MIME_TYPES) // since api 19: multible .setType()
                 ;
 
-        /* does not work with material files :-(
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-
-            String lastUsed = PreferenceManager
-                    .getDefaultSharedPreferences(this.getApplicationContext())
-                            .getString(KEY_CSV_FILE_URI, null);
-            if (lastUsed != null) {
-                // Optionally, specify a URI for the file that should appear in the
-                // system file picker when it loads.
-                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, Uri.parse(lastUsed));
-            }
-        }
-         */
-
-        Log.d(TAG,intent.toString() + " Extras " + intent.getExtras());
+        Log.d(TAG,"openCsvFilePicker " + intent.toString() + " Extras " + intent.getExtras());
 
         // to replace the deprecated simple solution see
         // https://stackoverflow.com/questions/62671106/onactivityresult-method-is-deprecated-what-is-the-alternative
         //noinspection deprecation
         startActivityForResult(intent, PICK_CSV_FILE);
+        // continues at onOpenCsvFilePickerResult() ...
     }
 
-    private void onOpenCsvFilePickerResult(Uri data) {
-        if (data != null) {
-            getContentResolver().takePersistableUriPermission(data, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            currentCsvFileUri = data;
-            saveLastUsedUri(data);
+    /**
+     * process the response from {@link #openCsvFilePicker()}
+     */
+    private void onOpenCsvFilePickerResult(int resultCode, Intent resultData) {
+        if (resultCode == Activity.RESULT_OK
+                && resultData != null
+                && resultData.getData() != null) {
+            // from https://developer.android.com/training/data-storage/shared/documents-files#java
+            executeLoadCsvFile(resultData.getData());
+        } else {
+            // PICK_CSV_FILE canceled. Use demo data instead
+            loadDemoData();
         }
-        repository = CsvItemRepositoryAndroid.createOrNull(this, data);
-        initializeTableView(findViewById(R.id.tableview), data);
-    }
 
-    private void saveLastUsedUri(Uri data) {
-        PreferenceManager
-                .getDefaultSharedPreferences(this.getApplicationContext())
-                .edit()
-                .putString(KEY_CSV_FILE_URI, data.toString())
-                .apply();
-    }
-
-    private Uri getLastUsedUri() {
-        String lastUsed = PreferenceManager
-                .getDefaultSharedPreferences(this.getApplicationContext())
-                .getString(KEY_CSV_FILE_URI, null);
-        return (lastUsed != null) ? Uri.parse(lastUsed) : null;
     }
 
     private void loadDemoData() {
-        CsvItem header = TestData.createSampleHeader(8);
+        Log.d(TAG,"loadDemoData()");
+
+        String[] header = TestData.createSampleHeader(8);
         List<CsvItem> pojos = TestData.createSampleData(header, 25);
 
-        repository = new CsvItemRepository(header, pojos);
-        CsvItemRepositoryAndroid.showError(this,null, "No Input CSV. Using demo data instead.");
-        initializeTableView(findViewById(R.id.tableview), null);
+        viewModel.load(header, pojos);
+        showFilename(null);
     }
 
-    private void initializeTableView(TableView tableView, Uri fileName) {
+    private void executeLoadCsvFile(@NonNull final Uri data) {
+        Log.d(TAG,"executeLoadCsvFile: Loading csv from " + data);
+
+        CsvDroidApp.executor.execute(() -> viewModel.load(data));
+        showFilename(data.toString());
+    }
+
+    private void showFilename(@Nullable String fileName) {
+        String path = "demo";
+        if (fileName != null) {
+            path = urlDecode(urlDecode(fileName));
+            int pos = path.lastIndexOf('/') + 1;
+            if (pos > 1) path = path.substring(pos);
+        }
+        setTitle(getString(R.string.app_name) + " " + path);
+    }
+
+    private void initializeTableView(TableView tableView, @NonNull List<CsvItem> csvItemList) {
 
         // Create TableView Adapter
         tableViewAdapter = new TableViewAdapter<>();
         tableView.setAdapter(tableViewAdapter);
 
-        if (repository != null) {
-            columnDefinitions = TestData.createColumnDefinitions(repository.getHeader());
-            setTableFilter(null);
+        if (viewModel != null) {
+            columnDefinitions = TestData.createColumnDefinitions(viewModel.getHeader());
+            setTableItems(csvItemList);
         }
 
         tableView.setTableViewListener(new TableViewListener(tableView));
-
-        String path = "demo";
-        if (fileName != null) {
-            path = urlDecode(urlDecode(fileName.toString()));
-            int pos = path.lastIndexOf('/') + 1;
-            if (pos > 1) path = path.substring(pos);
-        }
-        setTitle(getString(R.string.app_name) + " " + path);
     }
 
     private String urlDecode(String fileName) {
@@ -256,8 +233,8 @@ public class CSVTableActivity extends BaseActivity {
         }
     }
 
-    private void setTableFilter(String searchTerm) {
-        TableViewModel<CsvItem> tableViewModel = new TableViewModel<>(columnDefinitions, repository.getPojos(searchTerm));
+    private void setTableItems(@NonNull List<CsvItem> csvItemList) {
+        TableViewModel<CsvItem> tableViewModel = new TableViewModel<>(columnDefinitions, csvItemList);
         tableViewAdapter.setAllItems(tableViewModel.getColumnHeaderList(), tableViewModel
                 .getRowHeaderList(), tableViewModel.getCellList());
     }

@@ -18,7 +18,6 @@ this program. If not, see <http://www.gnu.org/licenses/>
  */
 package de.k3b.android.csvdroid;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -34,64 +33,25 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.List;
 
-import de.k3b.util.csv.CsvItem;
 import de.k3b.util.csv.CsvItemRepository;
 
 /**
  * Add android specific code to {@link CsvItemRepository}
  */
-public class CsvItemRepositoryAndroid extends CsvItemRepository {
+public class CsvItemRepositoryAndroid {
     private static final String TAG = CSVTableActivity.class.getSimpleName();
 
-    private CsvItemRepositoryAndroid(@NotNull CsvItem header, @NotNull List<CsvItem> pojos) {
-        super(header, pojos);
+    @NotNull
+    public static CsvItemRepository createOrThrow(@NotNull Context ctx, @NotNull Uri sourceUri) throws CsvValidationException, IOException {
+        return new CsvItemRepository(readAllOrThrow(ctx, sourceUri));
     }
 
-    @Nullable
-    public static CsvItemRepository createOrNull(@NotNull Activity activity) {
-        return createOrNull(activity, getSourceUriOrNull(activity.getIntent()));
-    }
-
-    @Nullable
-    public static CsvItemRepository createOrNull(@NotNull Context ctx, @Nullable Uri sourceUri) {
-        if (sourceUri != null) {
-            String csv = readAllOrNull(ctx, sourceUri);
-
-            if (csv != null) {
-                try {
-                    return create(csv);
-                } catch (Exception exception) {
-                    showError(ctx, exception, "Cannot read from " + sourceUri);
-                }
-            }
-        }
-        return null;
-    }
-
-    @Nullable
-    public static CsvItemRepository createOrThrow(@NotNull Context ctx, @Nullable Uri sourceUri) throws CsvValidationException, IOException {
-        return create(readAllOrThrow(ctx, sourceUri));
-    }
-
-    @Nullable
-    private static String readAllOrNull(Context ctx, @Nullable Uri inUri) {
-        if (inUri != null) {
-            try (InputStream is = ctx.getContentResolver().openInputStream(inUri)) {
-                return readAllOrThrow(is);
-            } catch (IOException exception) {
-                showError(ctx, exception, "Cannot read from " + inUri);
-            }
-        }
-        return null;
-    }
-
-    @NotNull private static String readAllOrThrow(Context ctx, @Nullable Uri inUri) throws IOException {
+    @NotNull private static String readAllOrThrow(Context ctx, @NotNull Uri inUri) throws IOException {
         return readAllOrThrow(ctx.getContentResolver().openInputStream(inUri));
     }
 
-    @NotNull private static String readAllOrThrow(InputStream is) throws IOException {
+    @NotNull private static String readAllOrThrow(@NotNull InputStream is) throws IOException {
         return IOUtils.toString(is, Charset.defaultCharset());
     }
 
@@ -100,7 +60,7 @@ public class CsvItemRepositoryAndroid extends CsvItemRepository {
         Log.e(TAG, text, exception);
     }
 
-    protected static Uri getSourceUriOrNull(Intent intent) {
+    @Nullable public static Uri getSourceUriOrNull(@Nullable Intent intent) {
         Uri result = null; // not found
         if (intent != null) {
             // used by VIEW or EDIT
@@ -111,5 +71,4 @@ public class CsvItemRepositoryAndroid extends CsvItemRepository {
         }
         return result;
     }
-
 }
