@@ -33,6 +33,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.evrencoskun.tableview.TableView;
 import com.evrencoskun.tableview.model.ColumnDefinition;
@@ -41,22 +42,23 @@ import com.evrencoskun.tableviewutil.TableViewModel;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.util.List;
 
 import de.k3b.android.csvdroid.view.CsvListViewModel;
 import de.k3b.util.csv.CsvItem;
 
 public class CSVTableActivity extends BaseActivity {
+    /** used for logging */
     private static final String TAG = CSVTableActivity.class.getSimpleName();
-    private static final int PICK_CSV_FILE = 2;
-    public static final String[] SUPPORTED_MIME_TYPES = {
+    private static final int REQUEST_ID_PICK_CSV_FILE = 2;
+    private static final String[] SUPPORTED_MIME_TYPES = {
             // standard
             "text/csv",
             // used by android
             "text/comma-separated-values"
     };
+    private static final int SEARCH_DELAY_MILLIS = 800;
+    private TableView tableView;
 
     private CsvListViewModel viewModel;
     private final Handler delayTimerForSearch = new Handler();
@@ -71,6 +73,7 @@ public class CSVTableActivity extends BaseActivity {
     protected void onCreateEx(Bundle savedInstanceState) {
         super.onCreateEx(savedInstanceState);
         setContentView(R.layout.activity_csv_table);
+        tableView = findViewById(R.id.tableview);
 
         viewModel = new ViewModelProvider(this)
                 .get(CsvListViewModel.class);
@@ -96,8 +99,12 @@ public class CSVTableActivity extends BaseActivity {
             }
         }
 
-        viewModel.getCsvList().observe(this,
-                l -> initializeTableView(findViewById(R.id.tableview),l));
+        viewModel.getCsvList().observe(this, this::initializeTableView);
+        viewModel.getStatus().observe(this, this::setStatus);
+    }
+
+    private void setStatus(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -118,7 +125,7 @@ public class CSVTableActivity extends BaseActivity {
             @Override
             public boolean onQueryTextChange(final String newSearchTerm) {
                 delayTimerForSearch.removeCallbacksAndMessages(null);
-                delayTimerForSearch.postDelayed(() -> viewModel.executeSearch(newSearchTerm), 300);
+                delayTimerForSearch.postDelayed(() -> viewModel.executeSearch(newSearchTerm), SEARCH_DELAY_MILLIS);
                 return true;
             }
         });
@@ -138,7 +145,7 @@ public class CSVTableActivity extends BaseActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode,
                                  Intent resultData) {
-        if (requestCode == PICK_CSV_FILE) {
+        if (requestCode == REQUEST_ID_PICK_CSV_FILE) {
             onOpenCsvFilePickerResult(resultCode,resultData);
             return;
         }
@@ -147,7 +154,7 @@ public class CSVTableActivity extends BaseActivity {
     }
 
     /**
-     * Ask the userer for a CSV-file to be loaded
+     * Ask the user for a CSV-file to be loaded
      */
     private void openCsvFilePicker() {
         // from https://developer.android.com/training/data-storage/shared/documents-files#java
@@ -155,7 +162,7 @@ public class CSVTableActivity extends BaseActivity {
                 .addCategory(Intent.CATEGORY_OPENABLE)
                 .putExtra(Intent.EXTRA_TITLE, getString(R.string.title_open_file))
                 .setType("text/*")
-                .putExtra(Intent.EXTRA_MIME_TYPES, SUPPORTED_MIME_TYPES) // since api 19: multible .setType()
+                .putExtra(Intent.EXTRA_MIME_TYPES, SUPPORTED_MIME_TYPES) // since api 19: multiple .setType()
                 ;
 
         Log.d(TAG,"openCsvFilePicker " + intent.toString() + " Extras " + intent.getExtras());
@@ -163,7 +170,7 @@ public class CSVTableActivity extends BaseActivity {
         // to replace the deprecated simple solution see
         // https://stackoverflow.com/questions/62671106/onactivityresult-method-is-deprecated-what-is-the-alternative
         //noinspection deprecation
-        startActivityForResult(intent, PICK_CSV_FILE);
+        startActivityForResult(intent, REQUEST_ID_PICK_CSV_FILE);
         // continues at onOpenCsvFilePickerResult() ...
     }
 
@@ -187,9 +194,9 @@ public class CSVTableActivity extends BaseActivity {
         Log.d(TAG,"loadDemoData()");
 
         String[] header = TestData.createSampleHeader(8);
-        List<CsvItem> pojos = TestData.createSampleData(header, 25);
+        List<CsvItem> csvItemList = TestData.createSampleData(header, 25);
 
-        viewModel.load(header, pojos);
+        viewModel.load(header, csvItemList);
         showFilename(null);
     }
 
@@ -201,16 +208,11 @@ public class CSVTableActivity extends BaseActivity {
     }
 
     private void showFilename(@Nullable String fileName) {
-        String path = "demo";
-        if (fileName != null) {
-            path = urlDecode(urlDecode(fileName));
-            int pos = path.lastIndexOf('/') + 1;
-            if (pos > 1) path = path.substring(pos);
-        }
-        setTitle(getString(R.string.app_name) + " " + path);
+        setTitle(getString(R.string.app_name) + " " + viewModel.getFilename(fileName));
     }
 
-    private void initializeTableView(TableView tableView, @NonNull List<CsvItem> csvItemList) {
+
+    private void initializeTableView(@NonNull List<CsvItem> csvItemList) {
 
         // Create TableView Adapter
         tableViewAdapter = new TableViewAdapter<>();
@@ -222,15 +224,6 @@ public class CSVTableActivity extends BaseActivity {
         }
 
         tableView.setTableViewListener(new TableViewListener(tableView));
-    }
-
-    private String urlDecode(String fileName) {
-        try {
-            return URLDecoder.decode(fileName,"UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            return fileName;
-        }
     }
 
     private void setTableItems(@NonNull List<CsvItem> csvItemList) {

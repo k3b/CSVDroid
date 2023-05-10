@@ -31,6 +31,8 @@ import androidx.lifecycle.MutableLiveData;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -143,6 +145,26 @@ public class CsvListViewModel extends AndroidViewModel {
 
     public MutableLiveData<String> getStatus() {
         return status;
+    }
+
+    @NonNull
+    public String getFilename(@Nullable Object fullPath) {
+        String path = "demo";
+        if (fullPath != null) {
+            path = urlDecode(urlDecode(fullPath.toString()));
+            int pos = path.lastIndexOf('/') + 1;
+            if (pos > 1) path = path.substring(pos);
+        }
+        return path;
+    }
+
+    private String urlDecode(String fileName) {
+        try {
+            return URLDecoder.decode(fileName,"UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return fileName;
+        }
     }
 
     private void onSearchFilterChanged() {
